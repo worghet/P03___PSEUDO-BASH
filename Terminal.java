@@ -1,4 +1,6 @@
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -7,6 +9,7 @@ public class Terminal {
     // -- CONSTANT / UTILITY VARIABLES ------
 
     static final String FILE_SEPARATOR = File.separator; // test this on another os
+    static final int FILE = 0, DIRECTORY = 1;
     static final Map<String, String> COMMAND_DICTIONARY = Map.of(
 
             // ASSISTANCE METHODS
@@ -25,6 +28,7 @@ public class Terminal {
             "mkfile" , "[ mkfile (file_name) | Makes a text file with the given name. ]",
             "mkdir", "[ mkdir (directory_name) | Makes a directory with the given name. ]",
             "delete", "[ delete (file_name, directory_name) | Deletes the given item. ]"
+
             // MISC
 
     );
@@ -32,7 +36,8 @@ public class Terminal {
     // -- OBJECT FIELDS ---------------------
 
     String username = "user", host = "pseudobash";
-    String previousCommand = "";
+    File currentDirectory = new File(System.getProperty("user.dir"));
+    ArrayList<String> history = new ArrayList<>();
     Scanner input;
 
     // -- CONSTRUCTOR ------------------------
@@ -55,14 +60,11 @@ public class Terminal {
 
             // get command
 
-            System.out.print("\u001B[1m" + username + "@" + host + ":~" + getPrintableFilePath() + "$ \u001B[0m");
+            System.out.print("\u001B[1m" + username + "@" + host + ":~" + currentDirectory.toString() + "$ \u001B[0m");
             String command = input.nextLine().toLowerCase();
             String[] tokenizedCommand = command.split(" ");
 
             try {
-
-                // check input or sum idk
-                // try {switch.. throws errors here} catch(ERROR MESSAGE HERE) {print error}
                 switch (tokenizedCommand[0]) {
 
                     // EMPTY CASE
@@ -79,7 +81,7 @@ public class Terminal {
 
                             System.out.print(keys[commandIndex] + " ".repeat(23 - keys[commandIndex].length()));
 
-                            if ((commandIndex + 1) % 3 == 0) {
+                            if (commandIndex != (keys.length - 1) && (commandIndex + 1) % 3 == 0) {
                                 System.out.println();
                             }
                         }
@@ -105,12 +107,33 @@ public class Terminal {
 
                         break;
 
-
                     case "secrets":
                         System.out.println("secret 1, secret 2 ...");
                         break;
 
-                    // UTILITY CASES
+                    // NAVIGATION CASES
+
+                    case "whereami":
+                        System.out.println(currentDirectory);
+                        break;
+
+                    case "go":
+                        switchDirectory(tokenizedCommand[1]); // FINISH
+                        break;
+
+                    case "lookhere":
+                        if (tokenizedCommand.length == 1) {
+                            printDirectoryContents(getDirectoryContents(currentDirectory.toString()));
+                        }
+                        else {
+                            printDirectoryContents(getDirectoryContents(tokenizedCommand[1]));
+                        }
+                        break;
+
+                    case "exit":
+                        return;
+
+                    // UTILITY / MISC
 
                     case "clear":
 
@@ -122,17 +145,18 @@ public class Terminal {
                         }
                         break;
 
-                    case "exit":
-                        return;
+                    case "history":
+                        for (int commandIndex = 0; commandIndex < history.size(); commandIndex++) {
+                            System.out.println((commandIndex+1) + " ".repeat((Integer.toString((history.size()))).length() - (Integer.toString(commandIndex+1)).length()) + " | " + history.get(commandIndex));
+                        }
+                        break;
+
 
                     case "whoami":
                         System.out.println(username);
                         break;
                     case "whoishost":
-                        System.out.println(host); // HOST OR DOMAIN??
-                        break;
-                    case "whereami":
-                        System.out.println(System.getProperty("user.dir"));
+                        System.out.println(host);
                         break;
                     case "print":
                         System.out.println(tokenizedCommand[1]);
@@ -141,12 +165,12 @@ public class Terminal {
                         System.out.println("Unknown command.. try \"help\" to see commands.");
                 }
             } catch (IndexOutOfBoundsException e) {
-                System.out.println("Invalid arguments. Use 'explain (command)' to see the valid arguments. ");
+                System.out.println("Invalid argument(s). Use 'explain (command)' to see the valid argument(s). ");
             } catch (Exception e) {
                 System.out.println(e);
             }
 
-//            previousCommand = command;
+            history.add(command);
 
         }
     }
@@ -154,17 +178,141 @@ public class Terminal {
 
     // -- USER METHODS --------------------------------------
 
-    // This will not change the actual device username; just the instance.
-    private void renameUser(String newUsername) {
-        username = newUsername;
+//    private boolean resourceExists(String absoluteFilePath, int desiredResourceType) {
+//
+//        File resource = new File(absoluteFilePath);
+//
+//        if ((resource.exists()) && (desiredResourceType == DIRECTORY && resource.isDirectory() || desiredResourceType == FILE && resource.isFile())) {
+//            return true;
+//        }
+//
+//        return false;
+//
+//    }
+
+    private void switchDirectory(String desiredDirectory) {
+        if (desiredDirectory.equals("up")) {
+            File parentDirectory =  currentDirectory.getParentFile();
+
+            if (parentDirectory == null) {
+                System.out.println("You are already at the root directory.");
+            }
+            else {
+                currentDirectory = parentDirectory;
+            }
+        }
+        else {
+            String[] directoryContents = getDirectoryContents(currentDirectory.toString());
+            String switchTo = null;
+            for (String directoryItem : directoryContents) {
+                if (directoryItem.equalsIgnoreCase(desiredDirectory) && (new File(currentDirectory, directoryItem)).isDirectory()) {
+                    switchTo = directoryItem;
+                }
+            }
+            if (switchTo != null) {
+                currentDirectory = new File(currentDirectory.toString() + FILE_SEPARATOR + switchTo);
+            }
+            else {
+                System.out.println("No such directory exists.");
+            }
+//            if () {
+//
+//            }
+//            if requested directory in directory list (ignore case): ... else: not a directory.currentDirectory = new File(desiredDirectory);
+        }
     }
 
-    private void changeHost(String newHost) {
-        host = newHost;
+    private String[] getDirectoryContents(String desiredDirectory) {
+        return new File(desiredDirectory).list();
     }
 
-    private String getPrintableFilePath() {
-        return "";
+    private void printDirectoryContents(String[] directoryContents) {
+        for (int directoryIndex = 0; directoryIndex < directoryContents.length; directoryIndex++) {
+
+            System.out.print(directoryContents[directoryIndex] + " ".repeat(23 - directoryContents[directoryIndex].length()));
+
+            if (directoryIndex != (directoryContents.length - 1) && (directoryIndex + 1) % 3 == 0) {
+                System.out.println();
+            }
+        }
+        System.out.println();
     }
 
 }
+
+
+// Start with the current working directory
+//        File currentDir = new File(System.getProperty("user.dir"));
+//        Scanner scanner = new Scanner(System.in);
+//
+//        System.out.println("Starting in directory: " + currentDir.getAbsolutePath());
+//        System.out.println("Type 'up' to go to the parent directory.");
+//        System.out.println("Type the name of a directory to navigate into.");
+//        System.out.println("Type 'mkdir' to create a new directory.");
+//        System.out.println("Type 'mkfile' to create a new file.");
+//        System.out.println("Type 'exit' to quit.");
+//
+//        while (true) {
+//            // List files and directories in the current directory
+//            listFiles(currentDir);
+//
+//            // Read the user's input
+//            String selection = scanner.nextLine().trim();
+//
+//            // If the user wants to go up to the parent directory
+//            if (selection.equals("up")) {
+//                // Navigate up (to the parent directory) if possible
+//                File parentDir = currentDir.getParentFile();
+//                if (parentDir != null) {
+//                    currentDir = parentDir;
+//                } else {
+//                    System.out.println("You are already at the root directory.");
+//                }
+//            } else if (selection.equals("exit")) {
+//                break; // Exit the loop if user types 'exit'
+//            } else if (selection.startsWith("mkdir ")) {
+//                // Create a new directory
+//                String dirName = selection.substring(6).trim();
+//                File newDir = new File(currentDir, dirName);
+//                if (newDir.mkdir()) {
+//                    System.out.println("Directory '" + dirName + "' created successfully.");
+//                } else {
+//                    System.out.println("Failed to create directory '" + dirName + "'.");
+//                }
+//            } else if (selection.startsWith("mkfile ")) {
+//                // Create a new file
+//                String fileName = selection.substring(7).trim();
+//                File newFile = new File(currentDir, fileName);
+//                try {
+//                    if (newFile.createNewFile()) {
+//                        System.out.println("File '" + fileName + "' created successfully.");
+//                    } else {
+//                        System.out.println("File '" + fileName + "' already exists.");
+//                    }
+//                } catch (IOException e) {
+//                    System.out.println("An error occurred while creating the file.");
+//                    e.printStackTrace();
+//                }
+//            } else {
+//                // Try to navigate into a subdirectory
+//                File selectedDir = new File(currentDir, selection);
+//                if (selectedDir.isDirectory()) {
+//                    currentDir = selectedDir;
+//                } else {
+//                    System.out.println("Invalid selection, not a directory.");
+//                }
+//            }
+
+// Method to list all files and directories in the current directory
+//    private static void listFiles(File dir) {
+//        System.out.println("\nContents of: " + dir.getAbsolutePath());
+//        String[] files = dir.list();
+//        if (files != null) {
+//            for (String file : files) {
+//                System.out.println(file);
+//            }
+//        } else {
+//            System.out.println("Unable to list files.");
+//        }
+//    }
+//}
