@@ -1,6 +1,5 @@
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -9,46 +8,26 @@ public class Terminal {
     // -- CONSTANT / UTILITY VARIABLES ------
 
     static final String FILE_SEPARATOR = File.separator; // test this on another os
-    static final int FILE = 0, DIRECTORY = 1;
-    static final Map<String, String> COMMAND_DICTIONARY = Map.of(
-
-            // ASSISTANCE METHODS
-            "help", "[ help (none) | Prints all available commands.]",
-            "explain", "[ explain (function_name, all) | Explains the given command. ]",
-            "secrets", "[ secrets (none) | Prints a list of secret commands. ]",
-
-            // NAVIGATION METHODS
-            "whereami", "[ whereami (none) | Prints the current working directory. ]",
-            "go", "[ go (directory_name, up) | Will switch the working directory. ]",
-            "lookhere", "[ lookhere (none, directory_name) | Will print the contents of the given directory. ]",
-            "exit", "[ exit (none) | Closes the program. ]",
-
-            // FILE MANAGEMENT METHODS
-
-            "mkfile" , "[ mkfile (file_name) | Makes a text file with the given name. ]",
-            "mkdir", "[ mkdir (directory_name) | Makes a directory with the given name. ]",
-            "delete", "[ delete (file_name, directory_name) | Deletes the given item. ]"
-
-            // MISC
-
-    );
+//    static final int FILE = 0, DIRECTORY = 1;
+    static final Map<String, String> COMMAND_DICTIONARY = initializeCommandDictionary();
 
     // -- OBJECT FIELDS ---------------------
 
-    String username = "user", host = "pseudobash";
-    File currentDirectory = new File(System.getProperty("user.dir"));
-    ArrayList<String> history = new ArrayList<>();
-    Scanner input;
+    private String username = "user", host = "pseudobash";
+    private File currentDirectory = new File(System.getProperty("user.dir"));
+    private ArrayList<String> log = new ArrayList<>();
+    private Scanner input;
 
     // -- CONSTRUCTOR ------------------------
 
+    public static void launchTerminal() { new Terminal().startProcesses(); }
     public Terminal() {
         input = new Scanner(System.in);
     }
 
     // -- TERMINAL LAUNCHER ------------------
 
-    public void launchTerminal() {
+    public void startProcesses() {
 
         // put this in a try/catch?
         username = System.getProperty("user.name");
@@ -94,13 +73,11 @@ public class Terminal {
                             for (String commandExplanation : COMMAND_DICTIONARY.values()) {
                                 System.out.println(commandExplanation);
                             }
-                        }
-                        else {
+                        } else {
 
                             if (COMMAND_DICTIONARY.get(tokenizedCommand[1]) == null) { // or use containsKey()
                                 System.out.println("Not a command. Use 'help' to get a list of commands.");
-                            }
-                            else {
+                            } else {
                                 System.out.println(COMMAND_DICTIONARY.get(tokenizedCommand[1]));
                             }
                         }
@@ -124,8 +101,7 @@ public class Terminal {
                     case "lookhere":
                         if (tokenizedCommand.length == 1) {
                             printDirectoryContents(getDirectoryContents(currentDirectory.toString()));
-                        }
-                        else {
+                        } else {
                             printDirectoryContents(getDirectoryContents(tokenizedCommand[1]));
                         }
                         break;
@@ -145,9 +121,9 @@ public class Terminal {
                         }
                         break;
 
-                    case "history":
-                        for (int commandIndex = 0; commandIndex < history.size(); commandIndex++) {
-                            System.out.println((commandIndex+1) + " ".repeat((Integer.toString((history.size()))).length() - (Integer.toString(commandIndex+1)).length()) + " | " + history.get(commandIndex));
+                    case "log":
+                        for (int commandIndex = 0; commandIndex < log.size(); commandIndex++) {
+                            System.out.println((commandIndex + 1) + " ".repeat((Integer.toString((log.size()))).length() - (Integer.toString(commandIndex + 1)).length()) + " | " + log.get(commandIndex));
                         }
                         break;
 
@@ -170,7 +146,7 @@ public class Terminal {
                 System.out.println(e);
             }
 
-            history.add(command);
+            log.add(command);
 
         }
     }
@@ -178,6 +154,11 @@ public class Terminal {
 
     // -- USER METHODS --------------------------------------
 
+    private static Map<String, String> initializeCommandDictionary() {
+        Map<String, String> completeDictionary = Map.of();
+//        completeDictionary.put();
+        return completeDictionary;
+    }
 //    private boolean resourceExists(String absoluteFilePath, int desiredResourceType) {
 //
 //        File resource = new File(absoluteFilePath);
@@ -190,18 +171,18 @@ public class Terminal {
 //
 //    }
 
+
+
     private void switchDirectory(String desiredDirectory) {
         if (desiredDirectory.equals("up")) {
-            File parentDirectory =  currentDirectory.getParentFile();
+            File parentDirectory = currentDirectory.getParentFile();
 
             if (parentDirectory == null) {
                 System.out.println("You are already at the root directory.");
-            }
-            else {
+            } else {
                 currentDirectory = parentDirectory;
             }
-        }
-        else {
+        } else {
             String[] directoryContents = getDirectoryContents(currentDirectory.toString());
             String switchTo = null;
             for (String directoryItem : directoryContents) {
@@ -211,14 +192,9 @@ public class Terminal {
             }
             if (switchTo != null) {
                 currentDirectory = new File(currentDirectory.toString() + FILE_SEPARATOR + switchTo);
-            }
-            else {
+            } else {
                 System.out.println("No such directory exists.");
             }
-//            if () {
-//
-//            }
-//            if requested directory in directory list (ignore case): ... else: not a directory.currentDirectory = new File(desiredDirectory);
         }
     }
 
