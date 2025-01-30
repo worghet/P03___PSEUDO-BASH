@@ -8,7 +8,7 @@ public class Terminal {
     // -- CONSTANT / UTILITY VARIABLES ------
 
     static final String FILE_SEPARATOR = File.separator; // test this on another os
-//    static final int FILE = 0, DIRECTORY = 1;
+    static final int FILE = 0, DIRECTORY = 1;
     static final Map<String, String> COMMAND_DICTIONARY = initializeCommandDictionary();
 
     // -- OBJECT FIELDS ---------------------
@@ -40,8 +40,9 @@ public class Terminal {
             // get command
 
             System.out.print("\u001B[1m" + username + "@" + host + ":~" + currentDirectory.toString() + "$ \u001B[0m");
-            String command = input.nextLine().toLowerCase();
+            String command = input.nextLine();
             String[] tokenizedCommand = command.split(" ");
+            tokenizedCommand[0] = tokenizedCommand[0].toLowerCase();
 
             try {
                 switch (tokenizedCommand[0]) {
@@ -102,7 +103,12 @@ public class Terminal {
                         if (tokenizedCommand.length == 1) {
                             printDirectoryContents(getDirectoryContents(currentDirectory.toString()));
                         } else {
-                            printDirectoryContents(getDirectoryContents(tokenizedCommand[1]));
+                            if (resourceExists(currentDirectory.toString() + FILE_SEPARATOR + tokenizedCommand[1], DIRECTORY)) {
+                                printDirectoryContents(getDirectoryContents(currentDirectory.toString() + FILE_SEPARATOR + tokenizedCommand[1]));
+                            }
+                            else {
+                                System.out.println("No such directory exists.");
+                            }
                         }
                         break;
 
@@ -127,7 +133,6 @@ public class Terminal {
                         }
                         break;
 
-
                     case "whoami":
                         System.out.println(username);
                         break;
@@ -145,8 +150,9 @@ public class Terminal {
             } catch (Exception e) {
                 System.out.println(e);
             }
-
-            log.add(command);
+            if (!command.isEmpty()) {
+                log.add(command);
+            }
 
         }
     }
@@ -155,26 +161,35 @@ public class Terminal {
     // -- USER METHODS --------------------------------------
 
     private static Map<String, String> initializeCommandDictionary() {
-        Map<String, String> completeDictionary = Map.of();
+        Map<String, String> completeDictionary = new java.util.HashMap<>(Map.of());
 //        completeDictionary.put();
+        completeDictionary.put("help", "[ help (none) | Prints all available commands.]");
+        completeDictionary.put("explain", "[ explain (function_name, all) | Explains the given command. ]");
+        completeDictionary.put("secrets", "[ secrets (none) | Prints a list of secret commands. ]");
+
+        // nav
+        completeDictionary.put("whereami", "[ whereami (none) | Prints the current working directory. ]");
+        completeDictionary.put("go", "[ go (directory_name, up) | Will switch the working directory. ]");
+        completeDictionary.put("lookhere", "[ lookhere (none, directory_name) | Will print the contents of the given directory. ]");
+        completeDictionary.put("exit", "[ exit (none) | Closes the program. ]");
+
+
         return completeDictionary;
     }
-//    private boolean resourceExists(String absoluteFilePath, int desiredResourceType) {
-//
-//        File resource = new File(absoluteFilePath);
-//
-//        if ((resource.exists()) && (desiredResourceType == DIRECTORY && resource.isDirectory() || desiredResourceType == FILE && resource.isFile())) {
-//            return true;
-//        }
-//
-//        return false;
-//
-//    }
 
+    private boolean resourceExists(String absoluteFilePath, int desiredResourceType) {
+        File resource = new File(absoluteFilePath);
 
+        if ((resource.exists() && (desiredResourceType == DIRECTORY && resource.isDirectory())) || (desiredResourceType == FILE && resource.isFile())) {
+            return true;
+        }
+
+        return false;
+
+    }
 
     private void switchDirectory(String desiredDirectory) {
-        if (desiredDirectory.equals("up")) {
+        if (desiredDirectory.equalsIgnoreCase("up")) {
             File parentDirectory = currentDirectory.getParentFile();
 
             if (parentDirectory == null) {
@@ -183,15 +198,8 @@ public class Terminal {
                 currentDirectory = parentDirectory;
             }
         } else {
-            String[] directoryContents = getDirectoryContents(currentDirectory.toString());
-            String switchTo = null;
-            for (String directoryItem : directoryContents) {
-                if (directoryItem.equalsIgnoreCase(desiredDirectory) && (new File(currentDirectory, directoryItem)).isDirectory()) {
-                    switchTo = directoryItem;
-                }
-            }
-            if (switchTo != null) {
-                currentDirectory = new File(currentDirectory.toString() + FILE_SEPARATOR + switchTo);
+            if (resourceExists(currentDirectory.toString() + FILE_SEPARATOR + desiredDirectory, DIRECTORY)) {
+                currentDirectory = new File(currentDirectory.toString() + FILE_SEPARATOR + desiredDirectory);
             } else {
                 System.out.println("No such directory exists.");
             }
