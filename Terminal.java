@@ -1,4 +1,5 @@
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
@@ -29,19 +30,15 @@ public class Terminal {
 
     public void startProcesses() {
 
-        // put this in a try/catch?
         username = System.getProperty("user.name");
-
 
         // START LOOP
 
         while (true) {
 
-            // get command
-
             System.out.print("\u001B[1m" + username + "@" + host + ":~" + currentDirectory.toString() + "$ \u001B[0m");
             String command = input.nextLine();
-            String[] tokenizedCommand = command.split(" ");
+            String[] tokenizedCommand = command.split(" "); // error is thrown here if input is just spaces.
             tokenizedCommand[0] = tokenizedCommand[0].toLowerCase();
 
             try {
@@ -86,6 +83,7 @@ public class Terminal {
                         break;
 
                     case "secrets":
+                        // TODO ADD SECRETS
                         System.out.println("secret 1, secret 2 ...");
                         break;
 
@@ -105,8 +103,7 @@ public class Terminal {
                         } else {
                             if (resourceExists(currentDirectory.toString() + FILE_SEPARATOR + tokenizedCommand[1], DIRECTORY)) {
                                 printDirectoryContents(getDirectoryContents(currentDirectory.toString() + FILE_SEPARATOR + tokenizedCommand[1]));
-                            }
-                            else {
+                            } else {
                                 System.out.println("No such directory exists.");
                             }
                         }
@@ -115,7 +112,13 @@ public class Terminal {
                     case "exit":
                         return;
 
-                    // UTILITY / MISC
+                    // FILE MANAGEMENT ----
+
+                    case "read":
+                        readFile(tokenizedCommand[1]);
+                        break;
+
+                    // UTILITY / MISC -----
 
                     case "clear":
 
@@ -140,23 +143,27 @@ public class Terminal {
                         System.out.println(host);
                         break;
                     case "print":
-                        System.out.println(tokenizedCommand[1]);
+
+                        for (int possibleTerm = 1; possibleTerm < tokenizedCommand.length; possibleTerm++) {
+                            System.out.print(tokenizedCommand[possibleTerm] + " ");
+                        }
+                        System.out.println();
                         break;
                     default:
                         System.out.println("Unknown command.. try \"help\" to see commands.");
                 }
             } catch (IndexOutOfBoundsException e) {
                 System.out.println("Invalid argument(s). Use 'explain (command)' to see the valid argument(s). ");
+            } catch (FileNotFoundException e) {
+                System.out.println("The file that you're trying to read does not exist.");
             } catch (Exception e) {
                 System.out.println(e);
             }
-            if (!command.isEmpty()) {
-                log.add(command);
-            }
+
+            logCommand(command);
 
         }
     }
-
 
     // -- USER METHODS --------------------------------------
 
@@ -220,6 +227,31 @@ public class Terminal {
             }
         }
         System.out.println();
+    }
+
+    private void logCommand(String commandMade) {
+
+        if (!commandMade.isEmpty()) {
+            log.add(commandMade);
+        }
+    }
+
+    private void readFile(String fileName) throws FileNotFoundException {
+
+        // add file extenstion if not there
+        if (!fileName.endsWith(".txt")) {
+            fileName += ".txt";
+        }
+
+        // could check if file exists here but exception already gives the message
+
+        File fileToRead = new File(fileName);
+        Scanner fileReader = new Scanner(fileToRead);
+        while (fileReader.hasNextLine()) {
+            System.out.println(fileReader.next());
+        }
+        fileReader.close();
+
     }
 
 }
