@@ -16,6 +16,11 @@ public class Terminal {
     static final String FILE_SEPARATOR = File.separator; // test this on another os
     static final int FILE = 0, DIRECTORY = 1;
     static final Map<String, String> COMMAND_DICTIONARY = initializeCommandDictionary();
+    static final Map<String, String> COLOR_CODES = Map.of("RESET", "\u001B[0m",
+                                                            "ERROR", "\u001B[31m",
+                                                            "FILE", "\u001B[35m",
+                                                        "DIRECTORY", "\u001B[36m",
+                                                        "REQUEST-LINE", "\u001B[32m");
 
     // -- OBJECT FIELDS ---------------------
 
@@ -44,7 +49,7 @@ public class Terminal {
             // =====================================================
 
             // Print the input field.
-            System.out.print("\u001B[1m" + username + "@" + hostname + ":~" + workingDirectory.toString() + "$ \u001B[0m");
+            System.out.print(COLOR_CODES.get("REQUEST-LINE") + username + "@" + hostname + ":~" + workingDirectory.toString() + "$ " + COLOR_CODES.get("RESET"));
 
             // Gather and tokenize the entered command.
             String command = input.nextLine(); String[] tokenizedCommand = command.split(" "); // error is thrown here if input is just spaces.
@@ -195,7 +200,7 @@ public class Terminal {
                         }
                         else {
                             // bum thing to do, might just ignore idk
-                            System.out.println("Invalid argument(s). Use 'explain (command)' to see the valid argument(s). ");
+                            System.out.println(COLOR_CODES.get("ERROR") + "Invalid argument(s). Use 'explain (command)' to see the valid argument(s). " + COLOR_CODES.get("RESET"));
                         }
                         break;
 
@@ -273,23 +278,23 @@ public class Terminal {
 
                     // In case the inputted command was was not recognized, prints message.
                     default:
-                        System.out.println("Unknown command.. try \"help\" to see commands.");
+                        System.out.println(COLOR_CODES.get("ERROR") + "Unknown command.. try \"help\" to see commands." + COLOR_CODES.get("RESET"));
                 }
             }
 
             // Handles improper argument placements.
             catch (IndexOutOfBoundsException e) {
-                System.out.println("Invalid argument(s). Use 'explain (command)' to see the valid argument(s). ");
+                System.out.println(COLOR_CODES.get("ERROR") + "Invalid argument(s). Use 'explain (command)' to see the valid argument(s). " + COLOR_CODES.get("RESET"));
             }
 
             // Handles file management.
             catch (FileNotFoundException e) {
-                System.out.println("The file that you're trying to read cannot be found.");
+                System.out.println(COLOR_CODES.get("ERROR") + "The file that you're trying to read cannot be found." + COLOR_CODES.get("RESET"));
             }
 
             // Handles all other exceptions.
             catch (Exception e) {
-                System.out.println("Error occured: " + e);
+                System.out.println(COLOR_CODES.get("ERROR") + "Error occured: " + e + COLOR_CODES.get("RESET"));
             }
 
             // Saves the command into the log.
@@ -362,7 +367,7 @@ public class Terminal {
 
             // Check that we are already at root directory.
             if (parentDirectory == null) {
-                System.out.println("You are already at the root directory.");
+                System.out.println(COLOR_CODES.get("ERROR") + "You are already at the root directory." + COLOR_CODES.get("RESET"));
             }
             // Otherwise, go to parent directory.
             else {
@@ -381,7 +386,7 @@ public class Terminal {
             }
             // Gives a message if doesnt exist.
             else {
-                System.out.println("No such directory exists.");
+                System.out.println(COLOR_CODES.get("ERROR") + "No such directory exists." + COLOR_CODES.get("RESET"));
             }
         }
     }
@@ -397,8 +402,21 @@ public class Terminal {
         // Iterate through each element and print it.
         for (int directoryIndex = 0; directoryIndex < directoryContents.length; directoryIndex++) {
 
+            // Color-code the output.
+            File currentResource = new File(workingDirectory.toString() + FILE_SEPARATOR + directoryContents[directoryIndex]);
+            String colorToUse = "";
+            if (currentResource.isDirectory()) {
+                colorToUse = "DIRECTORY";
+            }
+            else {
+                colorToUse = "FILE";
+                if (currentResource.isHidden()) {
+                    colorToUse = "HIDDEN-FILE";
+                }
+            }
+
             // Print element.
-            System.out.print(directoryContents[directoryIndex] + " ".repeat(23 - directoryContents[directoryIndex].length()));
+            System.out.print(COLOR_CODES.get(colorToUse) + directoryContents[directoryIndex] + COLOR_CODES.get("RESET") + " ".repeat(23 - directoryContents[directoryIndex].length()));
 
             // New line every 3 elements.
             if (directoryIndex != (directoryContents.length - 1) && (directoryIndex + 1) % 3 == 0) {
@@ -446,7 +464,7 @@ public class Terminal {
     private void makeResource(String resourceType, String newResourceName) throws IOException {
 
         if (safety) {
-            System.out.println("Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety.");
+            System.out.println( COLOR_CODES.get("ERROR")+ "Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety." + COLOR_CODES.get("RESET"));
         }
         else {
 
@@ -457,7 +475,7 @@ public class Terminal {
                 makeDirectory(newResourceName);
             }
             else {
-                System.out.println("Invalid parameter: must enter \"file\" or \"directory\" to specify resource creation.");
+                System.out.println(COLOR_CODES.get("ERROR") + "Invalid parameter: must enter \"file\" or \"directory\" to specify resource creation." + COLOR_CODES.get("RESET"));
             }
 
         }
@@ -476,7 +494,7 @@ public class Terminal {
 
         // Check that there is no text file by that name already.
         if (!(new File(workingDirectory.toString(), filename)).createNewFile())  {
-            System.out.println("A file by that name already exists.");
+            System.out.println(COLOR_CODES.get("ERROR") + "A file by that name already exists." + COLOR_CODES.get("RESET"));
         }
 
     }
@@ -484,7 +502,7 @@ public class Terminal {
     // Makes a directory in the working directory.
     private void makeDirectory(String directoryname) {
         if (Arrays.asList(getDirectoryContents(workingDirectory.toString())).contains(directoryname)) {
-            System.out.println("A directory by that name already exists.");
+            System.out.println(COLOR_CODES.get("ERROR") + "A directory by that name already exists." + COLOR_CODES.get("RESET"));
         }
         else {
             new File(workingDirectory.toString() + FILE_SEPARATOR + directoryname).mkdir();
@@ -516,7 +534,7 @@ public class Terminal {
 
     private void deleteResource(String resourceType, String resourceFilepath) {
         if (safety) {
-            System.out.println("Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety.");
+            System.out.println(COLOR_CODES.get("ERROR") + "Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety." + COLOR_CODES.get("RESET"));
         }
         else {
 
@@ -529,7 +547,7 @@ public class Terminal {
                 deleteDirectory(resourceFilepath);
             }
             else {
-                System.out.println("Invalid parameter: must enter \"file\" or \"directory\" to specify resource deletion.");
+                System.out.println(COLOR_CODES.get("ERROR") + "Invalid parameter: must enter \"file\" or \"directory\" to specify resource deletion." + COLOR_CODES.get("RESET"));
             }
 
         }
@@ -542,7 +560,7 @@ public class Terminal {
         }
         else {
             System.out.println(filepath);
-            System.out.println("The file you are trying to delete does not exist.");
+            System.out.println(COLOR_CODES.get("ERROR") + "The file you are trying to delete does not exist." + COLOR_CODES.get("RESET"));
         }
     }
 
@@ -569,11 +587,24 @@ public class Terminal {
         directoryAsFile.delete();
     }
 
-    private void moveResource(int resourceType, String currentResourceFilepath, String newDirectory) {
+    // TODO move method is on hold for now
+    private void moveResource(String resourceType, String currentResourceFilepath, String newDirectory) {
         if (safety) {
             System.out.println("Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety.");
         }
         else {
+
+            currentResourceFilepath = workingDirectory.toString() + FILE_SEPARATOR + currentResourceFilepath;
+
+            if (resourceType.equalsIgnoreCase("file")) {
+
+            }
+            else if (resourceType.equalsIgnoreCase("directory") || resourceType.equalsIgnoreCase("folder")) {
+
+            }
+            else {
+                System.out.println("Invalid parameter: must enter \"file\" or \"directory\" to specify resource relocation.");
+            }
 
 
         }
