@@ -1,7 +1,9 @@
 // == IMPORTS =======================
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -21,6 +23,7 @@ public class Terminal {
     private File workingDirectory = new File(System.getProperty("user.dir"));
     private ArrayList<String> log = new ArrayList<>();
     private Scanner input = new Scanner(System.in); ;
+    private boolean safety = true;
 
     // -- "CONSTRUCTOR" (DEFAULT) ------------
 
@@ -170,11 +173,43 @@ public class Terminal {
                     // -- FILE MANAGEMENT COMMANDS --------
                     // ====================================
 
+                    case "safety":
+                        if (tokenizedCommand[1].equalsIgnoreCase("status")) {
+                            System.out.print("Resource safety is currently ");
+                            if (safety) {
+                                System.out.println("ON.");
+                            }
+                            else {
+                                System.out.println("OFF.");
+                            }
+                        }
+                        else if (tokenizedCommand[1].equalsIgnoreCase("toggle")) {
+                            toggleSafety();
+                            System.out.print("Resource safety is now ");
+                            if (safety) {
+                                System.out.println("ON.");
+                            }
+                            else {
+                                System.out.println("OFF.");
+                            }
+                        }
+                        else {
+                            // bum thing to do, might just ignore idk
+                            System.out.println("Invalid argument(s). Use 'explain (command)' to see the valid argument(s). ");
+                        }
+                        break;
 
                     case "read":
                         readFile(tokenizedCommand[1]);
                         break;
 
+                    case "make":
+                        makeResource(tokenizedCommand[1], tokenizedCommand[2]);
+                        break;
+
+                    case "delete":
+                        deleteResource(tokenizedCommand[1], tokenizedCommand[2]);
+                        break;
 
                     // ====================================
                     // -- USER DIAGNOSTICS COMMANDS -------
@@ -282,6 +317,12 @@ public class Terminal {
         completeDictionary.put("lookhere", "[ lookhere (none, directory_name) | Will print the contents of the given directory. ]");
         completeDictionary.put("exit", "[ exit (none) | Closes the program. ]");
 
+        // Add file management commands.
+        completeDictionary.put("read", "[ read (file_name) | Prints the contents of a text file. ]");
+        completeDictionary.put("safety", "[ safety (toggle, status) | Disables commands that allow file changes. Ex. ‘delete’, ‘move’, etc. ]");
+        completeDictionary.put("make", "[ make (file, directory + resource name | Makes the specified resource in the working directory. ]");
+        completeDictionary.put("delete", "[ delete (file, directory + resource name | Deletes the specified resource in the working directory. ]");
+
         // Add the user-diagnostic commands.
         completeDictionary.put("whoami", "[ whoami (none) | Prints username. ]");
         completeDictionary.put("whoishost", "[ whoishost (none) Prints hostname. ]");
@@ -376,6 +417,8 @@ public class Terminal {
         }
     }
 
+    // ----------------------------------------------------------------------------------------------------
+
     // Reads the given text file.
     private void readFile(String filePath) throws FileNotFoundException {
 
@@ -400,99 +443,143 @@ public class Terminal {
 
     }
 
-    private void makeTextFile() {
+    private void makeResource(String resourceType, String newResourceName) throws IOException {
+
+        if (safety) {
+            System.out.println("Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety.");
+        }
+        else {
+
+            if (resourceType.equalsIgnoreCase("file")) {
+                makeFile(newResourceName);
+            }
+            else if (resourceType.equalsIgnoreCase("directory") || resourceType.equalsIgnoreCase("folder")) {
+                makeDirectory(newResourceName);
+            }
+            else {
+                System.out.println("Invalid parameter: must enter \"file\" or \"directory\" to specify resource creation.");
+            }
+
+        }
 
     }
 
-    private void makeDirectory() {
+    // Makes a text file in the working directory.
+    private void makeFile(String filename) throws IOException {
+
+        // TODO Make .java classes, .cpp, .py, for the gui IDE
+
+        // Add file extenstion if not there.
+        if (!filename.endsWith(".txt")) {
+            filename += ".txt";
+        }
+
+        // Check that there is no text file by that name already.
+        if (!(new File(workingDirectory.toString(), filename)).createNewFile())  {
+            System.out.println("A file by that name already exists.");
+        }
 
     }
 
-    private void deleteResource() {
+    // Makes a directory in the working directory.
+    private void makeDirectory(String directoryname) {
+        if (Arrays.asList(getDirectoryContents(workingDirectory.toString())).contains(directoryname)) {
+            System.out.println("A directory by that name already exists.");
+        }
+        else {
+            new File(workingDirectory.toString() + FILE_SEPARATOR + directoryname).mkdir();
+        }
+    }
+
+    private void toggleSafety() {
+        safety = !safety;
+    }
+
+    // indev method, will display cool metadata abt resource
+//    private int identifyResource(String filepath) {
+//        File file = new File(filepath);
+//
+//        if (file.exists()) {
+//            if (file.isFile()) {
+//                System.out.println("Resource type: FILE");
+//                System.out.println("File type: -use-file-extension-");
+//                return FILE;
+//            }
+//            else {
+//                return DIRECTORY;
+//            }
+//        }
+//        else {
+//            return (-1);
+//        }
+//    }
+
+    private void deleteResource(String resourceType, String resourceFilepath) {
+        if (safety) {
+            System.out.println("Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety.");
+        }
+        else {
+
+            resourceFilepath = workingDirectory.toString() + FILE_SEPARATOR + resourceFilepath;
+
+            if (resourceType.equalsIgnoreCase("file")) {
+                deleteFile(resourceFilepath);
+            }
+            else if (resourceType.equalsIgnoreCase("directory") || resourceType.equalsIgnoreCase("folder")) {
+                deleteDirectory(resourceFilepath);
+            }
+            else {
+                System.out.println("Invalid parameter: must enter \"file\" or \"directory\" to specify resource deletion.");
+            }
+
+        }
 
     }
 
-    private void moveResource() {
+    private void deleteFile(String filepath) {
+        if (resourceExists(filepath, FILE)) {
+            (new File(filepath)).delete();
+        }
+        else {
+            System.out.println(filepath);
+            System.out.println("The file you are trying to delete does not exist.");
+        }
+    }
+
+    // recursive
+    private void emptyDirectory(File directoryFile) {
+        for (File subResource : directoryFile.listFiles()) {
+
+            // if it is a subfolder,e.g Rohan and Ritik,
+            //  recursively call function to empty subfolder
+            if (subResource.isDirectory()) {
+                emptyDirectory(subResource);
+            }
+
+            // delete files and empty subfolders
+            subResource.delete();
+        }
+    }
+
+    private void deleteDirectory(String filepath) {
+        File directoryAsFile = new File(filepath);
+
+        emptyDirectory(directoryAsFile);
+
+        directoryAsFile.delete();
+    }
+
+    private void moveResource(int resourceType, String currentResourceFilepath, String newDirectory) {
+        if (safety) {
+            System.out.println("Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety.");
+        }
+        else {
+
+
+        }
 
     }
 
     //write / open ide
 
 }
-
-
-// Start with the current working directory
-//        File currentDir = new File(System.getProperty("user.dir"));
-//        Scanner scanner = new Scanner(System.in);
-//
-//        System.out.println("Starting in directory: " + currentDir.getAbsolutePath());
-//        System.out.println("Type 'up' to go to the parent directory.");
-//        System.out.println("Type the name of a directory to navigate into.");
-//        System.out.println("Type 'mkdir' to create a new directory.");
-//        System.out.println("Type 'mkfile' to create a new file.");
-//        System.out.println("Type 'exit' to quit.");
-//
-//        while (true) {
-//            // List files and directories in the current directory
-//            listFiles(currentDir);
-//
-//            // Read the user's input
-//            String selection = scanner.nextLine().trim();
-//
-//            // If the user wants to go up to the parent directory
-//            if (selection.equals("up")) {
-//                // Navigate up (to the parent directory) if possible
-//                File parentDir = currentDir.getParentFile();
-//                if (parentDir != null) {
-//                    currentDir = parentDir;
-//                } else {
-//                    System.out.println("You are already at the root directory.");
-//                }
-//            } else if (selection.equals("exit")) {
-//                break; // Exit the loop if user types 'exit'
-//            } else if (selection.startsWith("mkdir ")) {
-//                // Create a new directory
-//                String dirName = selection.substring(6).trim();
-//                File newDir = new File(currentDir, dirName);
-//                if (newDir.mkdir()) {
-//                    System.out.println("Directory '" + dirName + "' created successfully.");
-//                } else {
-//                    System.out.println("Failed to create directory '" + dirName + "'.");
-//                }
-//            } else if (selection.startsWith("mkfile ")) {
-//                // Create a new file
-//                String fileName = selection.substring(7).trim();
-//                File newFile = new File(currentDir, fileName);
-//                try {
-//                    if (newFile.createNewFile()) {
-//                        System.out.println("File '" + fileName + "' created successfully.");
-//                    } else {
-//                        System.out.println("File '" + fileName + "' already exists.");
-//                    }
-//                } catch (IOException e) {
-//                    System.out.println("An error occurred while creating the file.");
-//                    e.printStackTrace();
-//                }
-//            } else {
-//                // Try to navigate into a subdirectory
-//                File selectedDir = new File(currentDir, selection);
-//                if (selectedDir.isDirectory()) {
-//                    currentDir = selectedDir;
-//                } else {
-//                    System.out.println("Invalid selection, not a directory.");
-//                }
-//            }
-
-// Method to list all files and directories in the current directory
-//    private static void listFiles(File dir) {
-//        System.out.println("\nContents of: " + dir.getAbsolutePath());
-//        String[] files = dir.list();
-//        if (files != null) {
-//            for (String file : files) {
-//                System.out.println(file);
-//            }
-//        } else {
-//            System.out.println("Unable to list files.");
-//        }
-//    }
-//}
