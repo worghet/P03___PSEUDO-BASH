@@ -1,4 +1,5 @@
 // == IMPORTS =======================
+
 import javax.sound.sampled.*;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -18,23 +19,25 @@ public class Terminal {
     static final int FILE = 0, DIRECTORY = 1;
     static final Map<String, String> COMMAND_DICTIONARY = initializeCommandDictionary();
     static final Map<String, String> COLOR_CODES = Map.of("RESET", "\u001B[0m",
-                                                            "ERROR", "\u001B[31m",
-                                                            "FILE", "\u001B[35m",
-                                                        "DIRECTORY", "\u001B[36m",
-                                                        "REQUEST-LINE", "\u001B[32m");
+            "ERROR", "\u001B[31m",
+            "FILE", "\u001B[35m",
+            "DIRECTORY", "\u001B[36m",
+            "REQUEST-LINE", "\u001B[32m");
 
     // -- OBJECT FIELDS ---------------------
 
     private String username = "user", hostname = "pseudobash";
     private File workingDirectory = new File(System.getProperty("user.dir"));
     private ArrayList<String> log = new ArrayList<>();
-    private Scanner input = new Scanner(System.in); ;
-    private boolean safety = true;
+    private Scanner input = new Scanner(System.in);
+    private boolean resourceSafety = true;
     private Clip audioPlayer;
 
     // -- "CONSTRUCTOR" (DEFAULT) ------------
 
-    public static void launchTerminal() { new Terminal().startProcesses(); }
+    public static void launchTerminal() {
+        new Terminal().startProcesses();
+    }
 
     // -- TERMINAL LAUNCHER ------------------
 
@@ -54,7 +57,8 @@ public class Terminal {
             System.out.print(COLOR_CODES.get("REQUEST-LINE") + username + "@" + hostname + ":~" + workingDirectory.toString() + "$ " + COLOR_CODES.get("RESET"));
 
             // Gather and tokenize the entered command.
-            String command = input.nextLine(); String[] tokenizedCommand = command.split(" "); // error is thrown here if input is just spaces.
+            String command = input.nextLine();
+            String[] tokenizedCommand = command.split(" "); // error is thrown here if input is just spaces.
 
             // Set the command itself to lowercase such that it can be recognized if there's an uppercase mistake.
             tokenizedCommand[0] = tokenizedCommand[0].toLowerCase();
@@ -110,8 +114,7 @@ public class Terminal {
                             for (String commandExplanation : COMMAND_DICTIONARY.values()) {
                                 System.out.println(commandExplanation);
                             }
-                        }
-                        else {
+                        } else {
 
                             // Check that the command requested actually exists.
                             if (COMMAND_DICTIONARY.containsKey(tokenizedCommand[1])) { // or use containsKey()
@@ -183,24 +186,20 @@ public class Terminal {
                     case "safety":
                         if (tokenizedCommand[1].equalsIgnoreCase("status")) {
                             System.out.print("Resource safety is currently ");
-                            if (safety) {
+                            if (resourceSafety) {
                                 System.out.println("ON.");
-                            }
-                            else {
+                            } else {
                                 System.out.println("OFF.");
                             }
-                        }
-                        else if (tokenizedCommand[1].equalsIgnoreCase("toggle")) {
+                        } else if (tokenizedCommand[1].equalsIgnoreCase("toggle")) {
                             toggleSafety();
                             System.out.print("Resource safety is now ");
-                            if (safety) {
+                            if (resourceSafety) {
                                 System.out.println("ON.");
-                            }
-                            else {
+                            } else {
                                 System.out.println("OFF.");
                             }
-                        }
-                        else {
+                        } else {
                             // bum thing to do, might just ignore idk
                             System.out.println(COLOR_CODES.get("ERROR") + "Invalid argument(s). Use 'explain (command)' to see the valid argument(s). " + COLOR_CODES.get("RESET"));
                         }
@@ -224,6 +223,10 @@ public class Terminal {
 
                     case "stop":
                         stopPlayingAudio();
+                        break;
+
+                    case "move":
+                        moveResource(tokenizedCommand[1], tokenizedCommand[2], tokenizedCommand[3]);
                         break;
 
                     // ====================================
@@ -339,6 +342,7 @@ public class Terminal {
         completeDictionary.put("delete", "[ delete (file, directory + resource name | Deletes the specified resource in the working directory. ]");
         completeDictionary.put("play", "[ play (file_name) | Plays an audio file (only supports wav). ]");
         completeDictionary.put("stop", "[ stop | Stops playing audio if there is anything playing. ]");
+        completeDictionary.put("move", "[ move (resource_type + file_name + directory_name, up | Moves the resource to the specified directory. Moving directories is currently unsupported. ]");
 
         // Add the user-diagnostic commands.
         completeDictionary.put("whoami", "[ whoami (none) | Prints username. ]");
@@ -419,8 +423,7 @@ public class Terminal {
             String colorToUse = "";
             if (currentResource.isDirectory()) {
                 colorToUse = "DIRECTORY";
-            }
-            else {
+            } else {
                 colorToUse = "FILE";
                 if (currentResource.isHidden()) {
                     colorToUse = "HIDDEN-FILE";
@@ -475,18 +478,15 @@ public class Terminal {
 
     private void makeResource(String resourceType, String newResourceName) throws IOException {
 
-        if (safety) {
-            System.out.println( COLOR_CODES.get("ERROR")+ "Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety." + COLOR_CODES.get("RESET"));
-        }
-        else {
+        if (resourceSafety) {
+            System.out.println(COLOR_CODES.get("ERROR") + "Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety." + COLOR_CODES.get("RESET"));
+        } else {
 
             if (resourceType.equalsIgnoreCase("file")) {
                 makeFile(newResourceName);
-            }
-            else if (resourceType.equalsIgnoreCase("directory") || resourceType.equalsIgnoreCase("folder")) {
+            } else if (resourceType.equalsIgnoreCase("directory") || resourceType.equalsIgnoreCase("folder")) {
                 makeDirectory(newResourceName);
-            }
-            else {
+            } else {
                 System.out.println(COLOR_CODES.get("ERROR") + "Invalid parameter: must enter \"file\" or \"directory\" to specify resource creation." + COLOR_CODES.get("RESET"));
             }
 
@@ -505,7 +505,7 @@ public class Terminal {
         }
 
         // Check that there is no text file by that name already.
-        if (!(new File(workingDirectory.toString(), filename)).createNewFile())  {
+        if (!(new File(workingDirectory.toString(), filename)).createNewFile()) {
             System.out.println(COLOR_CODES.get("ERROR") + "A file by that name already exists." + COLOR_CODES.get("RESET"));
         }
 
@@ -515,14 +515,13 @@ public class Terminal {
     private void makeDirectory(String directoryname) {
         if (Arrays.asList(getDirectoryContents(workingDirectory.toString())).contains(directoryname)) {
             System.out.println(COLOR_CODES.get("ERROR") + "A directory by that name already exists." + COLOR_CODES.get("RESET"));
-        }
-        else {
+        } else {
             new File(workingDirectory.toString() + FILE_SEPARATOR + directoryname).mkdir();
         }
     }
 
     private void toggleSafety() {
-        safety = !safety;
+        resourceSafety = !resourceSafety;
     }
 
     // indev method, will display cool metadata abt resource
@@ -545,20 +544,17 @@ public class Terminal {
 //    }
 
     private void deleteResource(String resourceType, String resourceFilepath) {
-        if (safety) {
+        if (resourceSafety) {
             System.out.println(COLOR_CODES.get("ERROR") + "Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety." + COLOR_CODES.get("RESET"));
-        }
-        else {
+        } else {
 
             resourceFilepath = workingDirectory.toString() + FILE_SEPARATOR + resourceFilepath;
 
             if (resourceType.equalsIgnoreCase("file")) {
                 deleteFile(resourceFilepath);
-            }
-            else if (resourceType.equalsIgnoreCase("directory") || resourceType.equalsIgnoreCase("folder")) {
+            } else if (resourceType.equalsIgnoreCase("directory") || resourceType.equalsIgnoreCase("folder")) {
                 deleteDirectory(resourceFilepath);
-            }
-            else {
+            } else {
                 System.out.println(COLOR_CODES.get("ERROR") + "Invalid parameter: must enter \"file\" or \"directory\" to specify resource deletion." + COLOR_CODES.get("RESET"));
             }
 
@@ -569,8 +565,7 @@ public class Terminal {
     private void deleteFile(String filepath) {
         if (resourceExists(filepath, FILE)) {
             (new File(filepath)).delete();
-        }
-        else {
+        } else {
             System.out.println(filepath);
             System.out.println(COLOR_CODES.get("ERROR") + "The file you are trying to delete does not exist." + COLOR_CODES.get("RESET"));
         }
@@ -599,30 +594,59 @@ public class Terminal {
         directoryAsFile.delete();
     }
 
-    // TODO move method is on hold for now
-    private void moveResource(String resourceType, String currentResourceFilepath, String newDirectory) {
-        if (safety) {
-            System.out.println("Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety.");
-        }
-        else {
-
-            currentResourceFilepath = workingDirectory.toString() + FILE_SEPARATOR + currentResourceFilepath;
-
-            if (resourceType.equalsIgnoreCase("file")) {
-
-            }
-            else if (resourceType.equalsIgnoreCase("directory") || resourceType.equalsIgnoreCase("folder")) {
-
-            }
-            else {
-                System.out.println("Invalid parameter: must enter \"file\" or \"directory\" to specify resource relocation.");
-            }
-
-
+    private void moveResource(String resourceType, String absoluteFilePath, String newDirectory) {
+        if (resourceSafety) {
+            System.out.println(COLOR_CODES.get("ERROR") +
+                    "Resource safety is currently on; cannot perform command. Use \"safety toggle\" to disable safety." +
+                    COLOR_CODES.get("RESET"));
+            return; // instead of else
         }
 
+        File sourceFile = new File(workingDirectory, absoluteFilePath);
+
+        if (resourceType.equalsIgnoreCase("file")) {
+            if (!resourceExists(sourceFile.getAbsolutePath(), FILE)) {
+                System.out.println(COLOR_CODES.get("ERROR") + "The file you are trying to move does not exist." + COLOR_CODES.get("RESET"));
+                return;
+            }
+            if (newDirectory.equalsIgnoreCase("up")) {
+                File parentDir = workingDirectory.getParentFile();
+                if (parentDir == null) {
+                    System.out.println(COLOR_CODES.get("ERROR") + "Cannot move up. Already at the root directory." + COLOR_CODES.get("RESET"));
+                    return;
+                }
+                moveFile(sourceFile, parentDir);
+
+            } else if (new File(workingDirectory, newDirectory).isDirectory()) {  // Check if the directory exists inside workingDirectory
+                File targetDir = new File(workingDirectory, newDirectory);
+                moveFile(sourceFile, targetDir);
+
+            } else {
+                System.out.println(COLOR_CODES.get("ERROR") + "Relocation directory unclear." + COLOR_CODES.get("RESET"));
+            }
+
+
+        } else if (resourceType.equalsIgnoreCase("directory") || resourceType.equalsIgnoreCase("folder")) {
+            System.out.println(COLOR_CODES.get("ERROR") + "Sorry! Directory relocation is currently unsupported!" + COLOR_CODES.get("RESET"));
+        } else {
+            System.out.println(COLOR_CODES.get("ERROR") + "Invalid parameter: must enter \"file\" or \"directory\" to specify resource relocation." + COLOR_CODES.get("RESET"));
+        }
     }
 
+    private void moveFile(File sourceFile, File targetDirectory) {
+        File destinationFile = new File(targetDirectory, sourceFile.getName());
+
+        if (destinationFile.exists()) {
+            System.out.println(COLOR_CODES.get("ERROR") +
+                    "The file already exists in the target directory. Overwriting..." +
+                    COLOR_CODES.get("RESET"));
+            destinationFile.delete();  // Delete existing file before moving
+        }
+
+        if (!sourceFile.renameTo(destinationFile)) {
+            System.out.println(COLOR_CODES.get("ERROR") + "Failed to move the file." + COLOR_CODES.get("RESET"));
+        }
+    }
 
     private void playAudioFile(String localFilePath) throws LineUnavailableException, UnsupportedAudioFileException, IOException {
         String absoluteFilePath = workingDirectory.toString() + FILE_SEPARATOR + localFilePath;
@@ -635,7 +659,6 @@ public class Terminal {
                     audioPlayer = AudioSystem.getClip();
                     audioPlayer.open(AudioSystem.getAudioInputStream(audioFile));
 
-
                     String trackName = absoluteFilePath.split("/")[absoluteFilePath.split("/").length - 1];
                     String trackArtist = "Unknown";
                     // rough workaround - i would want to try using some kind of metadata for this..
@@ -647,16 +670,13 @@ public class Terminal {
 
                     audioPlayer.start();
                     System.out.println("Started playing \"" + trackName + "\" by " + trackArtist + ".");
-                }
-                else {
+                } else {
                     System.out.println(COLOR_CODES.get("ERROR") + "The file you are requesting to play is not a .wav file; it is unsupported." + COLOR_CODES.get("RESET"));
                 }
-            }
-            else {
+            } else {
                 System.out.println(COLOR_CODES.get("ERROR") + "There is already something being played. Use \"stop\" to stop playing it, then try again." + COLOR_CODES.get("RESET"));
             }
-        }
-        else {
+        } else {
             System.out.println(COLOR_CODES.get("ERROR") + "The file you are trying to play does not exist." + COLOR_CODES.get("RESET"));
         }
     }
@@ -665,8 +685,7 @@ public class Terminal {
         if (audioPlayer != null && audioPlayer.isRunning()) {
             audioPlayer.stop();
             audioPlayer.close();
-        }
-        else {
+        } else {
             System.out.println(COLOR_CODES.get("ERROR") + "Nothing is currently playing." + COLOR_CODES.get("RESET"));
         }
     }
