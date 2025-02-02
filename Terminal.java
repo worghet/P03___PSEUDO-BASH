@@ -223,7 +223,7 @@ public class Terminal {
                         break;
 
                     case "stop":
-                        pauseAudioFile();
+                        stopPlayingAudio();
                         break;
 
                     // ====================================
@@ -628,21 +628,32 @@ public class Terminal {
         String absoluteFilePath = workingDirectory.toString() + FILE_SEPARATOR + localFilePath;
         File audioFile = new File(absoluteFilePath);
 
-        // rough workaround - i would want to try using some kind of metadata for this..
-        if (absoluteFilePath.endsWith("kyrgyzstan.wav") || absoluteFilePath.endsWith("vabere.wav")) {
-            System.out.println("Custom track by Benjamin Tabatchik.");
-        } else if (absoluteFilePath.endsWith("gruppa-krovi.wav")) {
-            System.out.println("Track by KINO.");
-        }
-
         if (resourceExists(absoluteFilePath, FILE)) {
-            if (absoluteFilePath.endsWith(".wav")) {
-                audioPlayer = AudioSystem.getClip();
-                audioPlayer.open(AudioSystem.getAudioInputStream(audioFile));
-                audioPlayer.start();
+            if (audioPlayer == null || !audioPlayer.isOpen()) {
+
+                if (absoluteFilePath.endsWith(".wav")) {
+                    audioPlayer = AudioSystem.getClip();
+                    audioPlayer.open(AudioSystem.getAudioInputStream(audioFile));
+
+
+                    String trackName = absoluteFilePath.split("/")[absoluteFilePath.split("/").length - 1];
+                    String trackArtist = "Unknown";
+                    // rough workaround - i would want to try using some kind of metadata for this..
+                    if (absoluteFilePath.endsWith("kyrgyzstan.wav") || absoluteFilePath.endsWith("vabere.wav")) {
+                        trackArtist = "Benjamin Tabatchnik";
+                    } else if (absoluteFilePath.endsWith("gruppa-krovi.wav")) {
+                        trackArtist = "Kino";
+                    }
+
+                    audioPlayer.start();
+                    System.out.println("Started playing \"" + trackName + "\" by " + trackArtist + ".");
+                }
+                else {
+                    System.out.println(COLOR_CODES.get("ERROR") + "The file you are requesting to play is not a .wav file; it is unsupported." + COLOR_CODES.get("RESET"));
+                }
             }
             else {
-                System.out.println(COLOR_CODES.get("ERROR") + "The file you are requesting to play is not a .wav file; it is unsupported." + COLOR_CODES.get("RESET"));
+                System.out.println(COLOR_CODES.get("ERROR") + "There is already something being played. Use \"stop\" to stop playing it, then try again." + COLOR_CODES.get("RESET"));
             }
         }
         else {
@@ -650,9 +661,10 @@ public class Terminal {
         }
     }
 
-    private void pauseAudioFile() {
+    private void stopPlayingAudio() {
         if (audioPlayer != null && audioPlayer.isActive()) {
             audioPlayer.stop();
+            audioPlayer.close();
         }
         else {
             System.out.println(COLOR_CODES.get("ERROR") + "Nothing is currently playing." + COLOR_CODES.get("RESET"));
