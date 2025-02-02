@@ -1,4 +1,5 @@
 // == IMPORTS =======================
+import javax.sound.sampled.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,6 +30,7 @@ public class Terminal {
     private ArrayList<String> log = new ArrayList<>();
     private Scanner input = new Scanner(System.in); ;
     private boolean safety = true;
+    private Clip audioPlayer;
 
     // -- "CONSTRUCTOR" (DEFAULT) ------------
 
@@ -216,6 +218,14 @@ public class Terminal {
                         deleteResource(tokenizedCommand[1], tokenizedCommand[2]);
                         break;
 
+                    case "play":
+                        playAudioFile(tokenizedCommand[1]);
+                        break;
+
+                    case "stop":
+                        pauseAudioFile();
+                        break;
+
                     // ====================================
                     // -- USER DIAGNOSTICS COMMANDS -------
                     // ====================================
@@ -327,6 +337,8 @@ public class Terminal {
         completeDictionary.put("safety", "[ safety (toggle, status) | Disables commands that allow file changes. Ex. ‘delete’, ‘move’, etc. ]");
         completeDictionary.put("make", "[ make (file, directory + resource name | Makes the specified resource in the working directory. ]");
         completeDictionary.put("delete", "[ delete (file, directory + resource name | Deletes the specified resource in the working directory. ]");
+        completeDictionary.put("play", "[ play (file_name) | Plays an audio file (only supports wav). ]");
+        completeDictionary.put("stop", "[ stop | Stops playing audio if there is anything playing. ]");
 
         // Add the user-diagnostic commands.
         completeDictionary.put("whoami", "[ whoami (none) | Prints username. ]");
@@ -440,7 +452,7 @@ public class Terminal {
     // Reads the given text file.
     private void readFile(String filePath) throws FileNotFoundException {
 
-        // Add file extenstion if not there.
+        // Add file extenstion if not there (COULD BE .java, etc).
         if (!filePath.endsWith(".txt")) {
             filePath += ".txt";
         }
@@ -457,7 +469,7 @@ public class Terminal {
         }
 
         // Close reader.
-        fileReader.close();
+        fileReader.close(); // should use try finally or try with resource
 
     }
 
@@ -609,6 +621,42 @@ public class Terminal {
 
         }
 
+    }
+
+
+    private void playAudioFile(String localFilePath) throws LineUnavailableException, UnsupportedAudioFileException, IOException {
+        String absoluteFilePath = workingDirectory.toString() + FILE_SEPARATOR + localFilePath;
+        File audioFile = new File(absoluteFilePath);
+
+        // rough workaround - i would want to try using some kind of metadata for this..
+        if (absoluteFilePath.endsWith("kyrgyzstan.wav") || absoluteFilePath.endsWith("vabere.wav")) {
+            System.out.println("Custom track by Benjamin Tabatchik.");
+        } else if (absoluteFilePath.endsWith("gruppa-krovi.wav")) {
+            System.out.println("Track by KINO.");
+        }
+
+        if (resourceExists(absoluteFilePath, FILE)) {
+            if (absoluteFilePath.endsWith(".wav")) {
+                audioPlayer = AudioSystem.getClip();
+                audioPlayer.open(AudioSystem.getAudioInputStream(audioFile));
+                audioPlayer.start();
+            }
+            else {
+                System.out.println(COLOR_CODES.get("ERROR") + "The file you are requesting to play is not a .wav file; it is unsupported." + COLOR_CODES.get("RESET"));
+            }
+        }
+        else {
+            System.out.println(COLOR_CODES.get("ERROR") + "The file you are trying to play does not exist." + COLOR_CODES.get("RESET"));
+        }
+    }
+
+    private void pauseAudioFile() {
+        if (audioPlayer != null && audioPlayer.isActive()) {
+            audioPlayer.stop();
+        }
+        else {
+            System.out.println(COLOR_CODES.get("ERROR") + "Nothing is currently playing." + COLOR_CODES.get("RESET"));
+        }
     }
 
     //write / open ide
