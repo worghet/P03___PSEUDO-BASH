@@ -629,7 +629,7 @@ public class Terminal {
         File audioFile = new File(absoluteFilePath);
 
         if (resourceExists(absoluteFilePath, FILE)) {
-            if (audioPlayer == null || !audioPlayer.isOpen()) {
+            if (audioPlayer == null || !audioPlayer.isRunning()) { // use isOpen? isActive??
 
                 if (absoluteFilePath.endsWith(".wav")) {
                     audioPlayer = AudioSystem.getClip();
@@ -662,7 +662,7 @@ public class Terminal {
     }
 
     private void stopPlayingAudio() {
-        if (audioPlayer != null && audioPlayer.isActive()) {
+        if (audioPlayer != null && audioPlayer.isRunning()) {
             audioPlayer.stop();
             audioPlayer.close();
         }
