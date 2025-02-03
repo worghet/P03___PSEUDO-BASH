@@ -1,0 +1,15 @@
+Welcome to the missing features list..
+
+Here is what I would have added if I had the commitment:
+1. write command: writes into a file.
+2. GUI: some basic gui that would allow for keyboard control, themes, as well as a text editor.
+   (ex. up arrow gets you the previous command that you put in,
+        tab tries to autocomplete your statement.)
+3. move: support for moving directories recursively
+4. find command: locates all files with a given name; recursively searches each directory using DFS.
+5. utility commands: compute strings, counting from x to y, etc; simple functions.
+6. network commands: setting up servers, connecting to servers, etc.
+7. run command: runs executable files (like python scripts, or an application)
+8. whatis command: gives the data of a resource (ex. if directory: how many items in it, when it was created, etc)
+
+Thank you for trying out the program..

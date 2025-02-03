@@ -17,7 +17,8 @@ public class Terminal {
 
     static final String FILE_SEPARATOR = File.separator; // test this on another os
     static final int FILE = 0, DIRECTORY = 1;
-    static final Map<String, String> COMMAND_DICTIONARY = initializeCommandDictionary();
+    static final Map<String, String> COMMAND_DICTIONARY = initializeCommandDictionary("DEFAULT");
+    static final Map<String, String> SECRET_COMMAND_DICTIONARY = initializeCommandDictionary("SECRET");
     static final Map<String, String> COLOR_CODES = Map.of("RESET", "\u001B[0m",
             "ERROR", "\u001B[31m",
             "FILE", "\u001B[35m",
@@ -120,6 +121,9 @@ public class Terminal {
                             if (COMMAND_DICTIONARY.containsKey(tokenizedCommand[1])) { // or use containsKey()
                                 System.out.println(COMMAND_DICTIONARY.get(tokenizedCommand[1]));
                             }
+                            else if (SECRET_COMMAND_DICTIONARY.containsKey(tokenizedCommand[1])) {
+                                System.out.println(SECRET_COMMAND_DICTIONARY.get(tokenizedCommand[1]));
+                            }
 
                             // Print a message if the command requested doesn't exist.
                             else {
@@ -132,9 +136,25 @@ public class Terminal {
                     // [ secrets (none) | Prints a list of secret commands. ]
                     case "secrets":
                         // TODO ADD SECRETS
-                        System.out.println("secret 1, secret 2 ...");
-                        break;
+                        // Print a helpful message.
+                        System.out.println("* use 'explain (command_name)' to get a description of the command *");
 
+                        // Get a String[] of every command name.
+                        String[] secretCommandNames = SECRET_COMMAND_DICTIONARY.keySet().toArray(new String[0]);
+
+                        // Print a formatted list of all the command names.
+                        for (int commandIndex = 0; commandIndex < SECRET_COMMAND_DICTIONARY.size(); commandIndex++) {
+
+                            // Prints the name of a command.
+                            System.out.print(secretCommandNames[commandIndex] + " ".repeat(23 - secretCommandNames[commandIndex].length()));
+
+                            // Makes a new line every 3 names.
+                            if (commandIndex != (secretCommandNames.length - 1) && (commandIndex + 1) % 3 == 0) {
+                                System.out.println();
+                            }
+                        }
+                        System.out.println();
+                        break;
 
                     // ====================================
                     // -- NAVIGATION COMMANDS -------------
@@ -252,14 +272,7 @@ public class Terminal {
 
                     // [ clear (none) | Prints many newlines on text-UI; clears the text on graphics-UI. ]
                     case "clear":
-
-                        // TODO check if tui or gui
-
-                        // Just prints many newlines to simulate cleared screen.
-                        for (int i = 0; i < 50; i++) {
-                            System.out.println();
-                        }
-
+                        clearScreen();
                         break;
 
                     // [ log (none) | Prints an order of commands used in the session. ]
@@ -281,6 +294,31 @@ public class Terminal {
                         }
 
                         System.out.println();
+                        break;
+
+
+                    // ====================================
+                    // -- SECRET COMMANDS -----------
+                    // ====================================
+
+                    case "art":
+                        System.out.println("" +
+                                "██████╗░░█████╗░██████╗░░░░░██╗░░░░██╗██████╗░░██████╗███████╗██╗░░░██╗██████╗░░█████╗░██████╗░░█████╗░░██████╗██╗░░██╗\n" +
+                                "██╔══██╗██╔══██╗╚════██╗░░░██╔╝░░░██╔╝██╔══██╗██╔════╝██╔════╝██║░░░██║██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔════╝██║░░██║\n" +
+                                "██████╔╝██║░░██║░█████╔╝░░██╔╝░░░██╔╝░██████╔╝╚█████╗░█████╗░░██║░░░██║██║░░██║██║░░██║██████╦╝███████║╚█████╗░███████║\n" +
+                                "██╔═══╝░██║░░██║░╚═══██╗░██╔╝░░░██╔╝░░██╔═══╝░░╚═══██╗██╔══╝░░██║░░░██║██║░░██║██║░░██║██╔══██╗██╔══██║░╚═══██╗██╔══██║\n" +
+                                "██║░░░░░╚█████╔╝██████╔╝██╔╝░░░██╔╝░░░██║░░░░░██████╔╝███████╗╚██████╔╝██████╔╝╚█████╔╝██████╦╝██║░░██║██████╔╝██║░░██║\n" +
+                                "╚═╝░░░░░░╚════╝░╚═════╝░╚═╝░░░░╚═╝░░░░╚═╝░░░░░╚═════╝░╚══════╝░╚═════╝░╚═════╝░░╚════╝░╚═════╝░╚═╝░░╚═╝╚═════╝░╚═╝░░╚═╝\n" +
+                                "█▀█ █▀█ █▀█ ░░█ █▀▀ █▀▀ ▀█▀   █▄▄ █▄█   █░█░█ █▀█ █▀█ █▀▀ █░█ █▀▀ ▀█▀   ░░▄▀ ░░▄▀   █▀▀ █▀▀ █▄▄   ▀█ █▀█ ▀█ █▀\n" +
+                                "█▀▀ █▀▄ █▄█ █▄█ ██▄ █▄▄ ░█░   █▄█ ░█░   ▀▄▀▄▀ █▄█ █▀▄ █▄█ █▀█ ██▄ ░█░   ▄▀░░ ▄▀░░   █▀░ ██▄ █▄█   █▄ █▄█ █▄ ▄█");
+                        break;
+
+                    case "benjytab":
+                        System.out.println("\"Look for the audio file nerd\" - Benjamin Tabatchnik");
+                        break;
+
+                    case "boot":
+                        launchBootupSequence();
                         break;
 
 
@@ -319,41 +357,51 @@ public class Terminal {
     // -- TERMINAL METHODS -------------------
 
     // Constructs the command dictionary constant (the constructor went up to 10 keys/values).
-    private static Map<String, String> initializeCommandDictionary() {
+    private static Map<String, String> initializeCommandDictionary(String mode) {
 
-        // Create the dictionary.
         Map<String, String> completeDictionary = new java.util.HashMap<>(Map.of());
 
-        // Add the assistance commands.
-        completeDictionary.put("help", "[ help (none) | Prints all available commands. ]");
-        completeDictionary.put("explain", "[ explain (function_name, all) | Explains the given command. ]");
-        completeDictionary.put("secrets", "[ secrets (none) | Prints a list of secret commands. ]");
+        if (mode.equals("DEFAULT")) {
+            // Create the dictionary.
 
-        // Add the navigation commands.
-        completeDictionary.put("whereami", "[ whereami (none) | Prints the current working directory. ]");
-        completeDictionary.put("go", "[ go (directory_name, up) | Will switch the working directory. ]");
-        completeDictionary.put("lookhere", "[ lookhere (none, directory_name) | Will print the contents of the given directory. ]");
-        completeDictionary.put("exit", "[ exit (none) | Closes the program. ]");
+            // Add the assistance commands.
+            completeDictionary.put("help", "[ help (none) | Prints all available commands. ]");
+            completeDictionary.put("explain", "[ explain (function_name, all) | Explains the given command. ]");
+            completeDictionary.put("secrets", "[ secrets (none) | Prints a list of secret commands. ]");
 
-        // Add file management commands.
-        completeDictionary.put("read", "[ read (file_name) | Prints the contents of a text file. ]");
-        completeDictionary.put("safety", "[ safety (toggle, status) | Disables commands that allow file changes. Ex. ‘delete’, ‘move’, etc. ]");
-        completeDictionary.put("make", "[ make (file, directory + resource name | Makes the specified resource in the working directory. ]");
-        completeDictionary.put("delete", "[ delete (file, directory + resource name | Deletes the specified resource in the working directory. ]");
-        completeDictionary.put("play", "[ play (file_name) | Plays an audio file (only supports wav). ]");
-        completeDictionary.put("stop", "[ stop | Stops playing audio if there is anything playing. ]");
-        completeDictionary.put("move", "[ move (resource_type + file_name + directory_name, up | Moves the resource to the specified directory. Moving directories is currently unsupported. ]");
+            // Add the navigation commands.
+            completeDictionary.put("whereami", "[ whereami (none) | Prints the current working directory. ]");
+            completeDictionary.put("go", "[ go (directory_name, up) | Will switch the working directory. ]");
+            completeDictionary.put("lookhere", "[ lookhere (none, directory_name) | Will print the contents of the given directory. ]");
+            completeDictionary.put("exit", "[ exit (none) | Closes the program. ]");
 
-        // Add the user-diagnostic commands.
-        completeDictionary.put("whoami", "[ whoami (none) | Prints username. ]");
-        completeDictionary.put("whoishost", "[ whoishost (none) Prints hostname. ]");
+            // Add file management commands.
+            completeDictionary.put("read", "[ read (file_name) | Prints the contents of a text file. ]");
+            completeDictionary.put("safety", "[ safety (toggle, status) | Disables commands that allow file changes. Ex. ‘delete’, ‘move’, etc. ]");
+            completeDictionary.put("make", "[ make (file, directory + resource name | Makes the specified resource in the working directory. ]");
+            completeDictionary.put("delete", "[ delete (file, directory + resource name | Deletes the specified resource in the working directory. ]");
+            completeDictionary.put("play", "[ play (file_name) | Plays an audio file (only supports wav). ]");
+            completeDictionary.put("stop", "[ stop (none) | Stops playing audio if there is anything playing. ]");
+            completeDictionary.put("move", "[ move (resource_type + file_name + directory_name, up) | Moves the resource to the specified directory. Moving directories is currently unsupported. ]");
 
-        // Add the miscillanious commands.
-        completeDictionary.put("clear", "[ clear (none) | Prints many newlines on text-UI; clears the text on graphics-UI. ]");
-        completeDictionary.put("log", "[ log (none) | Prints an order of commands used in the session. ]");
-        completeDictionary.put("print", "[ print (text) | Prints the given text on the terminal. ]");
+            // Add the user-diagnostic commands.
+            completeDictionary.put("whoami", "[ whoami (none) | Prints username. ]");
+            completeDictionary.put("whoishost", "[ whoishost (none) Prints hostname. ]");
+
+            // Add the miscillanious commands.
+            completeDictionary.put("clear", "[ clear (none) | Prints many newlines on text-UI; clears the text on graphics-UI. ]");
+            completeDictionary.put("log", "[ log (none) | Prints an order of commands used in the session. ]");
+            completeDictionary.put("print", "[ print (text) | Prints the given text on the terminal. ]");
+
+        }
+        else {
+            completeDictionary.put("art", "[ art (none) | Prints an ASCII board that says pseudobash. ]");
+            completeDictionary.put("benjytab", "[ benjytab (none) | Prints a hint to find some cool stuff. ]");
+            completeDictionary.put("boot", "[ boot (none) | What awaits you before you launched pseudobash? ]");
+        }
 
         return completeDictionary;
+
     }
 
     // Checks whether a resource exists (* specifically as the desired data type *).
@@ -456,9 +504,9 @@ public class Terminal {
     private void readFile(String filePath) throws FileNotFoundException {
 
         // Add file extenstion if not there (COULD BE .java, etc).
-        if (!filePath.endsWith(".txt")) {
-            filePath += ".txt";
-        }
+//        if (!filePath.endsWith(".txt")) {
+//            filePath += ".txt";
+//        }
 
         // Technically should check if file exists here.. but exception already gives the message.
 
@@ -688,6 +736,36 @@ public class Terminal {
         } else {
             System.out.println(COLOR_CODES.get("ERROR") + "Nothing is currently playing." + COLOR_CODES.get("RESET"));
         }
+    }
+
+    private void launchBootupSequence() throws InterruptedException {
+        clearScreen();
+        typePrintEffect("Knock, knock, " + username + "...");
+        Thread.sleep(2600);
+        typePrintEffect("The code is all around you. Can you see it?");
+        typePrintEffect("ERROR: unauthorized user, resuming simulation...");
+        Thread.sleep(100);
+        clearScreen();
+
+    }
+
+    private void clearScreen() {
+
+        // TODO check if tui or gui
+
+        // Just prints many newlines to simulate cleared screen.
+        for (int i = 0; i < 50; i++) {
+            System.out.println();
+        }
+
+    }
+
+    private void typePrintEffect(String toPrint) throws InterruptedException {
+        for (int charIndex = 0; charIndex < toPrint.length(); charIndex++) {
+            System.out.print(toPrint.charAt(charIndex));
+            Thread.sleep(200);
+        }
+        System.out.println();
     }
 
     //write / open ide
